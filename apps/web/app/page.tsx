@@ -85,60 +85,59 @@ export default function LandingPage() {
       </nav>
 
       {/* ── Hero ───────────────────────────────────────────────────────── */}
-      <section className="section" style={{ paddingTop: "7rem", paddingBottom: "5rem", textAlign: "center" }}>
-        <div className="container-narrow">
+      <section className="section" style={{ paddingTop: "7rem", paddingBottom: "5rem", textAlign: "center", position: "relative", overflow: "hidden" }}>
+        {/* Floating element circles - Moved to background layer to prevent text overlapping */}
+        <div style={{
+          position: "absolute", left: "50%", top: "50%",
+          transform: "translate(-50%, -50%)", width: "100%", height: "100%",
+          maxWidth: "1200px",
+          pointerEvents: "none", zIndex: 0,
+        }}>
+          {ELEMENT_CIRCLES.map((el, i) => (
+            <div
+              key={el.name}
+              style={{
+                position: "absolute",
+                width: "80px", height: "80px",
+                borderRadius: "50%",
+                background: `radial-gradient(circle, ${el.color}25, transparent)`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontFamily: "var(--font-noto-sc), serif",
+                fontSize: "1.5rem",
+                color: el.color,
+                left: `${15 + i * 17}%`,
+                top: `${20 + (i % 2 === 0 ? 10 : 40)}%`,
+                animation: `qi-float ${4 + i * 0.5}s ease-in-out infinite`,
+                animationDelay: el.delay,
+                opacity: 0.15,
+                filter: "blur(2px)",
+              }}
+            >
+              {el.char}
+            </div>
+          ))}
+        </div>
 
-          {/* Floating element circles */}
-          <div style={{
-            position: "absolute", left: "50%", top: "120px",
-            transform: "translateX(-50%)", width: "600px", height: "300px",
-            pointerEvents: "none", overflow: "visible",
-          }}>
-            {ELEMENT_CIRCLES.map((el, i) => (
-              <div
-                key={el.name}
-                style={{
-                  position: "absolute",
-                  width: "48px", height: "48px",
-                  borderRadius: "50%",
-                  background: `radial-gradient(circle, ${el.color}30, transparent)`,
-                  border: `1px solid ${el.color}40`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontFamily: "'Noto Serif SC', serif",
-                  fontSize: "1.1rem",
-                  color: el.color,
-                  left: `${10 + i * 22}%`,
-                  top: `${i % 2 === 0 ? 20 : 55}%`,
-                  animation: `qi-float ${3 + i * 0.4}s ease-in-out infinite`,
-                  animationDelay: el.delay,
-                  opacity: 0.7,
-                }}
-              >
-                {el.char}
-              </div>
-            ))}
+        <div className="container-narrow animate-fade-in" style={{ position: "relative", zIndex: 1 }}>
+          <div className="badge badge-gold" style={{ margin: "0 auto 1.5rem", display: "inline-flex" }}>
+            Private Beta — Limited Access
           </div>
 
-          <div className="animate-fade-in" style={{ position: "relative", zIndex: 1 }}>
-            <div className="badge badge-gold" style={{ margin: "0 auto 1.5rem", display: "inline-flex" }}>
-              Private Beta — Limited Access
-            </div>
+          <h1 style={{ marginBottom: "1.5rem", textShadow: "0 2px 20px rgba(0,0,0,0.5)" }}>
+            Your{" "}
+            <span className="text-gradient-gold">AI Grandmaster</span>
+            <br />
+            in Your Pocket
+          </h1>
 
-            <h1 style={{ marginBottom: "1.5rem" }}>
-              Your{" "}
-              <span className="text-gradient-gold">AI Grandmaster</span>
-              <br />
-              in Your Pocket
-            </h1>
-
-            <p style={{
-              fontSize: "1.2rem",
-              color: "var(--text-secondary)",
-              lineHeight: 1.7,
-              marginBottom: "2.5rem",
-              maxWidth: "560px",
-              margin: "0 auto 2.5rem",
-            }}>
+          <p style={{
+            fontSize: "1.15rem",
+            color: "var(--text-secondary)",
+            lineHeight: 1.7,
+            marginBottom: "2.5rem",
+            maxWidth: "560px",
+            margin: "0 auto 2.5rem",
+          }}>
               Authentic Bazi readings with True Solar Time precision. A persistent AI
               advisor who knows your chart, remembers your life, and reaches out
               <em> before</em> critical moments arrive.
@@ -157,7 +156,6 @@ export default function LandingPage() {
               No credit card required · Instant results
             </p>
           </div>
-        </div>
       </section>
 
       {/* ── Stats strip ──────────────────────────────────────────────────── */}
@@ -222,10 +220,9 @@ export default function LandingPage() {
 
       {/* ── Chart preview mockup ─────────────────────────────────────────── */}
       <section className="section" style={{ background: "var(--bg-surface)" }}>
-        <div className="container">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "4rem", alignItems: "center" }}>
+        <div className="container" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))", gap: "4rem", alignItems: "center" }}>
 
-            <div>
+          <div>
               <div className="badge badge-jade" style={{ marginBottom: "1.5rem" }}>
                 Your Four Pillars
               </div>
@@ -291,7 +288,6 @@ export default function LandingPage() {
             </div>
 
           </div>
-        </div>
       </section>
 
       {/* ── Testimonials ─────────────────────────────────────────────────── */}

@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import type { BaziChart } from "@bazisage/bazi-core";
+import { AIOverviewCard } from "./AIOverviewCard";
 
 export const metadata: Metadata = { title: "My Bazi Chart" };
 
@@ -46,6 +47,16 @@ export default async function ChartPage({ params }: { params: Promise<{ id: stri
     { label: "Year",  pillar: chart.yearPillar,  tenGod: chart.tenGods?.yearStem },
   ];
 
+  // Fetch cached overview reading if it exists
+  const { data: readingRow } = await supabase
+    .from("readings")
+    .select("content")
+    .eq("chart_id", id)
+    .eq("reading_type", "full")
+    .maybeSingle();
+
+  const initialReading = readingRow?.content;
+
   return (
     <main>
       {/* Nav */}
@@ -62,7 +73,12 @@ export default async function ChartPage({ params }: { params: Promise<{ id: stri
         {/* Header */}
         <div className="animate-fade-in" style={{ marginBottom: "2.5rem" }}>
           <div className="badge badge-gold" style={{ marginBottom: "1rem" }}>Your Chart</div>
-          <h1 style={{ marginBottom: "0.5rem" }}>{row.subject_name as string}&apos;s Bazi Chart</h1>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "1rem" }}>
+            <h1 style={{ marginBottom: "0.5rem" }}>{row.subject_name as string}&apos;s Bazi Chart</h1>
+            <Link href={`/onboarding?edit=${id}`} className="btn btn-ghost btn-sm" style={{ marginTop: "0.5rem" }}>
+              ⚙️ Edit Details
+            </Link>
+          </div>
           <p style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
             Born {new Date(row.birth_date as string).toLocaleDateString("en-US", {
               year: "numeric", month: "long", day: "numeric"
@@ -120,6 +136,9 @@ export default async function ChartPage({ params }: { params: Promise<{ id: stri
                 })}
               </div>
             </section>
+
+            {/* Grandmaster Overview */}
+            <AIOverviewCard chartId={id} initialReading={initialReading} />
 
             {/* Day Master */}
             <section className="card animate-fade-in stagger-1" style={{ marginBottom: "1.5rem" }}>

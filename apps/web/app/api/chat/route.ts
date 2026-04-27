@@ -93,10 +93,16 @@ export async function POST(request: NextRequest) {
         ]);
 
         // Update session message count + last_message_at
+        const { data: session } = await supabase
+          .from("chat_sessions")
+          .select("message_count")
+          .eq("id", body.sessionId)
+          .single();
+
         await supabase
           .from("chat_sessions")
           .update({
-            message_count: supabase.rpc("increment", { x: 2 }),
+            message_count: (session?.message_count ?? 0) + 2,
             last_message_at: new Date().toISOString(),
           })
           .eq("id", body.sessionId);

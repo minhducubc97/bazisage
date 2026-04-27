@@ -18,6 +18,11 @@ interface OnboardingData {
   timezone: string;
 }
 
+export interface OnboardingClientProps {
+  editId?: string;
+  initialData?: Partial<OnboardingData>;
+}
+
 // ─── Step config ──────────────────────────────────────────────────────────────
 
 const STEPS = [
@@ -32,20 +37,20 @@ const STEPS = [
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function OnboardingClient() {
+export default function OnboardingClient({ editId, initialData }: OnboardingClientProps = {}) {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState<OnboardingData>({
-    name: "",
-    birthDate: "",
-    birthTimeKnown: null,
-    birthTime: "",
-    gender: "",
-    locationName: "",
-    longitude: null,
-    latitude: null,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    name: initialData?.name ?? "",
+    birthDate: initialData?.birthDate ?? "",
+    birthTimeKnown: initialData?.birthTimeKnown ?? null,
+    birthTime: initialData?.birthTime ?? "",
+    gender: initialData?.gender ?? "",
+    locationName: initialData?.locationName ?? "",
+    longitude: initialData?.longitude ?? null,
+    latitude: initialData?.latitude ?? null,
+    timezone: initialData?.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
 
   const canAdvance = useCallback(() => {
@@ -71,20 +76,24 @@ export default function OnboardingClient() {
     try {
       // Compute the chart via the API (persists to Supabase if user is signed in)
       const utcOffsetMinutes = -new Date().getTimezoneOffset();
+      const payload: any = {
+        birthDate: data.birthDate,
+        birthTime: data.birthTimeKnown ? data.birthTime : null,
+        birthLocationName: data.locationName,
+        longitude: data.longitude,
+        latitude: data.latitude,
+        gender: data.gender,
+        timezone: data.timezone,
+        utcOffsetMinutes,
+        subjectName: data.name,
+      };
+
+      if (editId) payload.id = editId;
+
       const res = await fetch("/api/chart/compute", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          birthDate: data.birthDate,
-          birthTime: data.birthTimeKnown ? data.birthTime : null,
-          birthLocationName: data.locationName,
-          longitude: data.longitude,
-          latitude: data.latitude,
-          gender: data.gender,
-          timezone: data.timezone,
-          utcOffsetMinutes,
-          subjectName: data.name,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error("chart compute failed");

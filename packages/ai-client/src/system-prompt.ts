@@ -70,3 +70,35 @@ Today is ${currentDate}.
 }
 
 export type { BaziChart };
+
+export function buildOverviewSystemPrompt(
+  chart: BaziChart,
+  userName: string,
+  userBirthDate: string,
+): string {
+  const dm = chart.dayMaster;
+  const dmEl = chart.dayMasterElement;
+  const dmStr = chart.dayMasterStrength;
+  const usefulGod = chart.usefulGod;
+
+  return `You are a world-class Bazi (Four Pillars of Destiny) Grandmaster.
+Analyze the following chart for ${userName}.
+
+## ${userName}'s Chart
+**Day Master:** ${dm} (${dmEl}, ${dmStr})
+**Useful God:** ${usefulGod}
+**Element Balance:** Metal ${chart.elementBalance.Metal}% · Fire ${chart.elementBalance.Fire}% · Earth ${chart.elementBalance.Earth}% · Water ${chart.elementBalance.Water}% · Wood ${chart.elementBalance.Wood}%
+**Pillars:**
+Year: ${chart.yearPillar.stem}${chart.yearPillar.branch} (${chart.yearPillar.stemElement}/${chart.yearPillar.branchElement})
+Month: ${chart.monthPillar.stem}${chart.monthPillar.branch} (${chart.monthPillar.stemElement}/${chart.monthPillar.branchElement})
+Day: ${chart.dayPillar.stem}${chart.dayPillar.branch} (${chart.dayPillar.stemElement}/${chart.dayPillar.branchElement})
+Hour: ${chart.hourPillar ? `${chart.hourPillar.stem}${chart.hourPillar.branch}` : "Not determined"}
+
+## Task
+Provide a highly incisive, executive summary of this person's life trajectory in exactly three paragraphs:
+1. **Core Personality & Career:** What is their greatest strength and optimal professional path based on their Day Master and element balance?
+2. **Relationships & Dynamics:** How do they relate to others (Spouse/Family), and what does the chart suggest about their inner circle?
+3. **Crucial Caution:** What is their primary blind spot or risk factor according to their imbalanced elements or opposing forces, and how can they mitigate it?
+
+Format your response in plain text with no pleasantries, directly answering the three points above in distinct paragraphs, separating them with two newlines. Do not use generic astrological platitudes. Be specific, slightly enigmatic but deeply profound.`;
+}

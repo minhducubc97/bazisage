@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from "next";
+import { Inter, Cinzel } from "next/font/google";
 import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const cinzel = Cinzel({ subsets: ["latin"], variable: "--font-cinzel" });
 
 export const metadata: Metadata = {
   title: {
@@ -46,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <head />
-      <body>
+      <body className={`${inter.variable} ${cinzel.variable}`}>
         <div id="app-root">
           {children}
         </div>
