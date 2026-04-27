@@ -4,6 +4,42 @@ import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+// ─── Timezone helper ─────────────────────────────────────────────────────────
+/**
+ * Get UTC offset in minutes for an IANA timezone at a given local datetime.
+ * e.g. getUtcOffsetMinutes("Asia/Ho_Chi_Minh", "1997-05-15T12:00:00") → 420
+ */
+function getUtcOffsetMinutes(tz: string, localDatetime: string): number {
+  try {
+    // Parse local datetime as if it was UTC, then use Intl to find the real offset
+    const date = new Date(localDatetime + "Z");
+    // Get what UTC+0 time looks like when formatted in the target timezone
+    const formatter = new Intl.DateTimeFormat("en-US", {
+      timeZone: tz,
+      hour: "numeric",
+      minute: "numeric",
+      hour12: false,
+      timeZoneName: "short",
+    });
+    const formatted = formatter.format(date);
+    // Extract GMT offset like "GMT+7" or "GMT-5"
+    const match = formatted.match(/GMT([+-][0-9]+(?::[0-9]+)?)/);
+    if (match?.[1]) {
+      const parts = match[1].split(":").map(Number);
+      const hours = parts[0] ?? 0;
+      const mins = parts[1] ?? 0;
+      return hours * 60 + (hours < 0 ? -mins : mins);
+    }
+    // Fallback: use JS Date offset method
+    const utcMs = date.getTime();
+    const localMs = new Date(date.toLocaleString("en-US", { timeZone: tz })).getTime();
+    return Math.round((localMs - utcMs) / 60_000);
+  } catch {
+    // Fallback to browser timezone if IANA string is invalid
+    return -new Date().getTimezoneOffset();
+  }
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface OnboardingData {
@@ -74,8 +110,10 @@ export default function OnboardingClient({ editId, initialData }: OnboardingClie
   const submitChart = async () => {
     setIsLoading(true);
     try {
-      // Compute the chart via the API (persists to Supabase if user is signed in)
-      const utcOffsetMinutes = -new Date().getTimezoneOffset();
+      // Compute UTC offset from the birth location's timezone (NOT the browser's current timezone)
+      // data.timezone is the IANA string from open-meteo geocoding (e.g. "Asia/Ho_Chi_Minh")
+      const birthDatetime = data.birthDate + 'T12:00:00';
+      const utcOffsetMinutes = getUtcOffsetMinutes(data.timezone, birthDatetime);
       const payload: any = {
         birthDate: data.birthDate,
         birthTime: data.birthTimeKnown ? data.birthTime : null,

@@ -167,6 +167,7 @@ AI_PROVIDER=grok       # Grok 3 via xAI
 - [x] Auth — magic link + Google OAuth
 - [x] dashboard + chart persistence
 - [x] Grandmaster chat — DeepSeek V3 streaming, chart context injection, 24-hour clean slate memory
+- [x] Chart Editing — Edit date/time inputs without cloning chart profiles
 
 ### 🔜 Week 5
 - [ ] Monthly briefing generator

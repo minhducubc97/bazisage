@@ -3,6 +3,7 @@
 import { useChat } from "ai/react";
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 
 interface ChatPageProps {
   chartId: string;
@@ -34,12 +35,15 @@ export default function ChatClient({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showStarters, setShowStarters] = useState(initialMessages.length === 0);
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+  const { messages, input, handleInputChange, handleSubmit, append, isLoading, error } = useChat({
     api: "/api/chat",
     body: { sessionId, chartId },
     initialMessages,
     onFinish: () => {
       setShowStarters(false);
+    },
+    onError: (err) => {
+      console.error("[ChatClient] useChat error:", err);
     },
   });
 
@@ -50,11 +54,7 @@ export default function ChatClient({
 
   const sendStarter = (question: string) => {
     setShowStarters(false);
-    // Simulate input then submit
-    const form = document.getElementById("chat-form") as HTMLFormElement;
-    const fakeInput = { target: { value: question } } as React.ChangeEvent<HTMLTextAreaElement>;
-    handleInputChange(fakeInput);
-    setTimeout(() => form?.requestSubmit(), 50);
+    void append({ role: "user", content: question });
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -159,16 +159,21 @@ export default function ChatClient({
                   ☯ GRANDMASTER
                 </div>
               )}
-              <div className={m.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"}>
-                <p style={{
-                  margin: 0,
-                  lineHeight: 1.7,
+              <div className={m.role === "user" ? "chat-bubble-user" : "chat-bubble-assistant"} style={{ 
+                  color: "var(--text-primary)", 
                   fontSize: "0.9375rem",
-                  color: "var(--text-primary)",
-                  whiteSpace: "pre-wrap",
+                  lineHeight: 1.7,
                 }}>
-                  {m.content}
-                </p>
+                  <ReactMarkdown
+                    components={{
+                      p: ({ node, ...props }) => <p style={{ margin: "0 0 1rem 0", whiteSpace: "pre-wrap" }} {...props} />,
+                      strong: ({ node, ...props }) => <strong style={{ color: "var(--text-primary)", fontWeight: 600 }} {...props} />,
+                      ul: ({ node, ...props }) => <ul style={{ margin: "0 0 1rem 1.5rem" }} {...props} />,
+                      li: ({ node, ...props }) => <li style={{ marginBottom: "0.5rem" }} {...props} />,
+                    }}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
               </div>
             </div>
           ))}
@@ -203,7 +208,11 @@ export default function ChatClient({
               fontSize: "0.875rem",
               marginBottom: "1rem",
             }}>
-              Connection error — please try again.
+              {error.message?.includes("402_INSUFFICIENT_BALANCE") || error.message?.includes("Insufficient Balance") || error.message?.includes("402")
+                ? "⚠️ AI service credits exhausted. Please top up your DeepSeek account or switch your AI_PROVIDER in .env.local to 'claude'."
+                : error.message?.includes("401") || error.message?.includes("Unauthorized")
+                ? "⚠️ Session expired. Please refresh the page."
+                : `Connection error — ${error.message ?? "please try again."}`}
             </div>
           )}
 

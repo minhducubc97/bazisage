@@ -50,3 +50,6 @@ debug_*.mjs
 
 # TypeScript build info
 *.tsbuildinfo
+
+# Design
+HLD.md

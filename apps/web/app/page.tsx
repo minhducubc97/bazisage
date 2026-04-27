@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = {
   title: "BaziSage — Your AI Bazi Grandmaster",
@@ -30,19 +31,13 @@ const FEATURES = [
     icon: "📅",
     title: "Proactive Life Guidance",
     body: "Monthly briefings and personal clash alerts reach you before critical days arrive. The Grandmaster watches your chart so you don't have to.",
-  },
-  {
-    icon: "🎓",
-    title: "Learn While You Explore",
-    body: "Every reading includes expandable '💡 Learn' panels. You'll understand your own chart within weeks, not years of study.",
-  },
+  }
 ];
 
 const STATS = [
   { value: "100+", label: "Validated golden test cases" },
   { value: "3 sec", label: "Full chart in True Solar Time" },
   { value: "30", label: "Personalized daily advice templates" },
-  { value: "8 wk", label: "From idea to launch" },
 ];
 
 const TESTIMONIALS = [
@@ -56,7 +51,10 @@ const TESTIMONIALS = [
   },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
   return (
     <main style={{ position: "relative", zIndex: 1 }}>
 
@@ -74,11 +72,17 @@ export default function LandingPage() {
             <Link href="/pricing" style={{ color: "var(--text-secondary)", fontSize: "0.9rem" }}>
               Pricing
             </Link>
-            <Link href="/auth/login" className="btn btn-ghost btn-sm">
-              Sign In
-            </Link>
+            {user ? (
+              <Link href="/dashboard" className="btn btn-ghost btn-sm">
+                Dashboard
+              </Link>
+            ) : (
+              <Link href="/auth/login" className="btn btn-ghost btn-sm">
+                Sign In
+              </Link>
+            )}
             <Link href="/onboarding" className="btn btn-primary btn-sm">
-              Read My Chart
+              Begin
             </Link>
           </div>
         </div>
@@ -145,7 +149,7 @@ export default function LandingPage() {
 
             <div style={{ display: "flex", gap: "1rem", justifyContent: "center", flexWrap: "wrap" }}>
               <Link href="/onboarding" className="btn btn-primary btn-lg animate-glow-pulse">
-                Read My Chart Free →
+                Begin Your Reading
               </Link>
               <Link href="#how-it-works" className="btn btn-ghost btn-lg">
                 See How It Works
@@ -230,14 +234,11 @@ export default function LandingPage() {
                 See Your Chart<br />
                 <span className="text-gradient-jade">In Minutes</span>
               </h2>
-              <p style={{ color: "var(--text-secondary)", marginBottom: "2rem", lineHeight: 1.7 }}>
+              <p style={{ color: "var(--text-secondary)", marginBottom: "0", lineHeight: 1.7 }}>
                 Enter your birth details and receive your complete Four Pillars chart,
                 Day Master analysis, element balance, and Luck Pillar timeline —
                 all computed with True Solar Time precision.
               </p>
-              <Link href="/onboarding" className="btn btn-primary">
-                Get My Free Reading →
-              </Link>
             </div>
 
             {/* Chart preview card */}
@@ -346,7 +347,7 @@ export default function LandingPage() {
             It takes two minutes. The insights last a lifetime.
           </p>
           <Link href="/onboarding" className="btn btn-primary btn-lg animate-glow-pulse">
-            Read My Chart — It&apos;s Free
+            Consult the Grandmaster
           </Link>
         </div>
       </section>
