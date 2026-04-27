@@ -130,27 +130,8 @@ export default function ChatClient({
               {STARTER_QUESTIONS.map(q => (
                 <button
                   key={q}
+                  className="chat-starter-btn"
                   onClick={() => sendStarter(q)}
-                  style={{
-                    background: "var(--bg-surface)",
-                    border: "1px solid var(--bg-border)",
-                    borderRadius: "var(--radius-md)",
-                    padding: "0.875rem 1.25rem",
-                    textAlign: "left",
-                    cursor: "pointer",
-                    color: "var(--text-secondary)",
-                    fontSize: "0.9rem",
-                    lineHeight: 1.5,
-                    transition: "all var(--transition-fast)",
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--gold)";
-                    (e.currentTarget as HTMLButtonElement).style.color = "var(--text-primary)";
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--bg-border)";
-                    (e.currentTarget as HTMLButtonElement).style.color = "var(--text-secondary)";
-                  }}
                 >
                   {q}
                 </button>

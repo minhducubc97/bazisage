@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
 type Mode = "magic" | "password";
 
-export default function LoginPage() {
+// Separated into inner component so useSearchParams() is inside <Suspense>
+function LoginContent() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirectTo") ?? "/dashboard";
 
@@ -78,7 +79,6 @@ export default function LoginPage() {
               <h3 style={{ marginBottom: "0.75rem" }}>Check your inbox</h3>
               <p style={{ color: "var(--text-secondary)", fontSize: "0.9375rem", lineHeight: 1.6 }}>
                 We sent a magic link to <strong style={{ color: "var(--text-primary)" }}>{email}</strong>.
-                Click it to sign in — no password needed.
               </p>
               <button className="btn btn-ghost btn-sm" style={{ marginTop: "1.5rem" }} onClick={() => setSent(false)}>
                 Use a different email
@@ -100,7 +100,7 @@ export default function LoginPage() {
               </button>
 
               {/* Mode tabs */}
-              <div style={{ display: "flex", gap: "0", marginBottom: "1.25rem", border: "1px solid var(--bg-border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
+              <div style={{ display: "flex", marginBottom: "1.25rem", border: "1px solid var(--bg-border)", borderRadius: "var(--radius-md)", overflow: "hidden" }}>
                 {(["magic", "password"] as Mode[]).map(m => (
                   <button key={m} onClick={() => { setMode(m); setError(""); }}
                     style={{ flex: 1, padding: "0.5rem", fontSize: "0.8rem", cursor: "pointer", border: "none",
@@ -115,7 +115,6 @@ export default function LoginPage() {
 
               {error && <p style={{ color: "var(--danger)", fontSize: "0.875rem", marginBottom: "1rem" }}>{error}</p>}
 
-              {/* Magic link form */}
               {mode === "magic" && (
                 <form onSubmit={handleMagicLink}>
                   <div className="form-group">
@@ -129,7 +128,6 @@ export default function LoginPage() {
                 </form>
               )}
 
-              {/* Password form */}
               {mode === "password" && (
                 <form onSubmit={handlePassword}>
                   <div className="form-group">
@@ -157,5 +155,18 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+  );
+}
+
+// useSearchParams() must be inside <Suspense> in Next.js 15
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: "var(--gold)", fontFamily: "'Cinzel', serif" }}>☯</div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
