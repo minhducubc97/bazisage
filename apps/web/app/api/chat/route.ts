@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   // Load the chart + validate ownership
   const { data: chartRow } = await supabase
     .from("bazi_charts")
-    .select("chart_data, subject_name")
+    .select("chart_data, subject_name, birth_date")
     .eq("id", body.chartId)
     .eq("owner_id", user.id)
     .single();
@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
   const systemPrompt = buildGrandmasterSystemPrompt(
     chart,
     userName,
+    chartRow.birth_date as string,
     memories ?? [],
     new Date().toISOString().split("T")[0]
   );

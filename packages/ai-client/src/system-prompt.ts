@@ -15,6 +15,7 @@ import type { BaziChart } from "@bazisage/bazi-core";
 export function buildGrandmasterSystemPrompt(
   chart: BaziChart,
   userName: string,
+  userBirthDate: string,
   memories: Array<{ kind: string; content: string }> = [],
   currentDate: string = new Date().toISOString().split("T")[0]!,
 ): string {
@@ -25,7 +26,7 @@ export function buildGrandmasterSystemPrompt(
   const usefulGod = chart.usefulGod;
 
   // Current Luck Pillar
-  const age = new Date().getFullYear() - new Date(chart.birthDate ?? "1990-01-01").getFullYear();
+  const age = new Date().getFullYear() - new Date(userBirthDate).getFullYear();
   const currentLP = chart.luckPillars.find(lp => age >= lp.startAge && age <= lp.endAge);
   const lpInfo = currentLP
     ? `Currently in Luck Pillar ${currentLP.pillar.stem}${currentLP.pillar.branch} (age ${currentLP.startAge}–${currentLP.endAge}, ${currentLP.startYear}–${currentLP.endAge - currentLP.startAge + currentLP.startYear})`

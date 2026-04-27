@@ -11,7 +11,7 @@
 | Feature | Typical Bazi App | BaziSage |
 |---|---|---|
 | Solar time correction | ❌ Uses wrong birth time | ✅ True Solar Time via Equation of Time |
-| AI model | Static text blocks | ✅ Persistent Grandmaster (remembers you) |
+| AI model | Static text blocks | ✅ Context-aware Grandmaster (24h clean slate) |
 | Proactive guidance | ❌ You ask, it answers | ✅ Monthly briefings, clash alerts |
 | Accuracy validation | ❌ No test suite | ✅ 33 golden-file fixtures, CI enforced |
 | Four Pillars source | Questionable | ✅ `tyme4ts` — professional-grade astronomy |
@@ -166,7 +166,7 @@ AI_PROVIDER=grok       # Grok 3 via xAI
 - [x] Demo chart page — real engine output
 - [x] Auth — magic link + Google OAuth
 - [x] dashboard + chart persistence
-- [x] Grandmaster chat — DeepSeek V3 streaming, chart context injection
+- [x] Grandmaster chat — DeepSeek V3 streaming, chart context injection, 24-hour clean slate memory
 
 ### 🔜 Week 5
 - [ ] Monthly briefing generator

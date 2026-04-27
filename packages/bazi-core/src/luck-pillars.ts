@@ -50,7 +50,7 @@ function computeLuckPillarStartAge(
 ): number {
   try {
     const birthSolarDay = SolarDay.fromYmd(birthYear, birthMonth, birthDay);
-    const terms = birthSolarDay.getSolarSeason().getSolarYear().getSolarTerms();
+    const terms = (birthSolarDay as any).getSolarMonth?.()?.getSolarYear?.()?.getSolarTerms?.() ?? [];
 
     // Find the next or previous Jié (節) term
     // Jié terms are at even indices (0, 2, 4, ...) in the 24 solar terms array

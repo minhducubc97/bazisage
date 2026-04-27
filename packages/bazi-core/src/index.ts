@@ -27,7 +27,7 @@ import { assessDayMasterStrength } from "./strength.js";
 import { computeElementBalance } from "./elements.js";
 import { computeLuckPillars, computeAnnualPillars } from "./luck-pillars.js";
 import { determineUsefulGod } from "./useful-god.js";
-import { STEM_INFO } from "./tables.js";
+import { STEM_INFO, BRANCH_INFO } from "./tables.js";
 
 // ─── Main compute function ─────────────────────────────────────────────────────
 
@@ -129,7 +129,7 @@ export function computeChart(
       branch,
       hiddenStems: [] as HeavenlyStem[],
       stemElement: STEM_INFO[stem].element,
-      branchElement: STEM_INFO[branch]?.element ?? "Wood",
+      branchElement: BRANCH_INFO[branch]?.element ?? "Wood",
     } as Pillar,
     interactions: [],
   }));
