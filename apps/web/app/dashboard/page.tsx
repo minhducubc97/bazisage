@@ -91,17 +91,7 @@ export default async function DashboardPage() {
                     href={`/chart/${chart.id as string}`}
                     style={{ textDecoration: "none" }}
                   >
-                    <div className="card card-gold" style={{
-                      cursor: "pointer",
-                      transition: "transform var(--transition-fast), box-shadow var(--transition-fast)",
-                    }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-                    }}
-                    >
+                    <div className="card card-gold chart-card-link">
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                           <div style={{
