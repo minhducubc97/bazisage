@@ -117,31 +117,57 @@ export function applyTrueSolarTime(
 }
 
 /**
- * Detect UTC offset from timezone string (e.g. "Asia/Ho_Chi_Minh" → 420).
- * Falls back to 0 if timezone is not recognized.
- * For production, use a proper timezone library (luxon / dayjs-timezone).
+ * Detect UTC offset (in minutes) for a given local datetime in an IANA timezone.
  *
- * @param isoDatetime - ISO datetime string (e.g. "1990-05-15T11:30:00")
- * @param timezone - IANA timezone string (e.g. "Asia/Ho_Chi_Minh")
+ * Uses Intl.DateTimeFormat with `timeZoneName: "longOffset"` which returns
+ * normalized strings like "GMT+07:00" / "GMT−05:00" for ALL IANA zones —
+ * including ones that previously returned abbreviations like PST/EDT/JST
+ * which the old regex silently dropped to 0.
+ *
+ * Throws on unknown timezone (instead of silently returning 0) so the caller
+ * can surface the error to the user during onboarding rather than computing
+ * a wrong chart.
+ *
+ * @param isoDatetime - ISO datetime string in the target tz, e.g. "1990-05-15T11:30:00"
+ * @param timezone - IANA timezone string, e.g. "Asia/Ho_Chi_Minh"
+ * @returns Offset in minutes (e.g. UTC+7 → 420, UTC-5 → -300)
  */
 export function utcOffsetFromTimezone(
   isoDatetime: string,
   timezone: string
 ): number {
-  try {
-    // Use Intl API to find the offset
-    const date = new Date(isoDatetime + "Z"); // treat as UTC base
-    const localStr = date.toLocaleString("en-US", { timeZone: timezone, timeZoneName: "short" });
-    // Parse "GMT+7" or similar from the string
-    const match = localStr.match(/GMT([+-]\d+(?::\d+)?)/);
-    if (match) {
-      const parts = match[1].split(":").map(Number);
-      const hours = parts[0] ?? 0;
-      const mins = parts[1] ?? 0;
-      return hours * 60 + (hours < 0 ? -mins : mins);
-    }
-  } catch {
-    // ignore
+  // Treat the local datetime as if it were UTC, then ask Intl what offset
+  // applies in `timezone` at that moment. This is correct for the purpose
+  // of solar-time computation because we need the standard-offset that
+  // applies to the wall-clock instant, including DST.
+  const probe = new Date(isoDatetime + "Z");
+  if (Number.isNaN(probe.getTime())) {
+    throw new Error(`Invalid ISO datetime: ${isoDatetime}`);
   }
-  return 0;
+
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    timeZoneName: "longOffset",
+  });
+
+  const parts = fmt.formatToParts(probe);
+  const tzPart = parts.find(p => p.type === "timeZoneName")?.value;
+  if (!tzPart) {
+    throw new Error(`Could not resolve UTC offset for timezone: ${timezone}`);
+  }
+
+  // Normalize Unicode minus (U+2212) to ASCII hyphen.
+  const normalized = tzPart.replace(/\u2212/g, "-");
+
+  // Match "GMT+07:00", "GMT-5", "GMT+5:30", or bare "GMT"/"UTC" (= 0).
+  const match = normalized.match(/^(?:GMT|UTC)([+-]\d{1,2})(?::(\d{2}))?$/);
+  if (!match) {
+    if (/^(?:GMT|UTC)$/.test(normalized)) return 0;
+    throw new Error(`Unparseable timezone offset string: ${tzPart}`);
+  }
+
+  const hours = Number(match[1]);
+  const mins = match[2] ? Number(match[2]) : 0;
+  const sign = hours < 0 ? -1 : 1;
+  return hours * 60 + sign * mins;
 }
