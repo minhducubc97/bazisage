@@ -522,7 +522,4 @@ a:hover { color: var(--text-primary); }
   .pillar-stem, .pillar-branch { font-size: 1.5rem; }
 }
 
-/* ─── Tailwind base integration ───────────────────────────────────────────── */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* End of BaziSage Design System */

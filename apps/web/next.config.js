@@ -2,8 +2,8 @@
 const nextConfig = {
   transpilePackages: [
     "@bazisage/bazi-core",
-    "@bazisage/shared",
     "@bazisage/ai-client",
+    "@bazisage/shared",
     "@bazisage/ui",
   ],
   // Tell webpack to resolve .js imports as .ts when inside transpiled packages.
