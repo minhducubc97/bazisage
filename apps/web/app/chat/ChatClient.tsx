@@ -56,7 +56,9 @@ export default function ChatClient({
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [showStarters, setShowStarters] = useState(initialMessages.length === 0);
 
-  const { messages, input, handleInputChange, handleSubmit, append, isLoading, error } = useChat({
+  const [isClearing, setIsClearing] = useState(false);
+
+  const { messages, setMessages, input, handleInputChange, handleSubmit, append, isLoading, error } = useChat({
     api: "/api/chat",
     body: { sessionId, chartId },
     initialMessages,
@@ -83,6 +85,20 @@ export default function ChatClient({
       e.preventDefault();
       const form = document.getElementById("chat-form") as HTMLFormElement;
       form?.requestSubmit();
+    }
+  };
+
+  const handleClearChat = async () => {
+    if (!window.confirm("Are you sure you want to scrap this conversation and start over?")) return;
+    setIsClearing(true);
+    try {
+      await fetch(`/api/chat?sessionId=${sessionId}`, { method: "DELETE" });
+      setMessages([]);
+      setShowStarters(true);
+    } catch (err) {
+      console.error("Failed to clear chat", err);
+    } finally {
+      setIsClearing(false);
     }
   };
 
@@ -118,9 +134,21 @@ export default function ChatClient({
             </div>
           </div>
         </div>
-        <Link href={`/chart/${chartId}`} className="btn btn-ghost btn-sm">
-          View Chart
-        </Link>
+        <div style={{ display: "flex", gap: "0.75rem" }}>
+          {messages.length > 0 && (
+            <button 
+              onClick={handleClearChat} 
+              disabled={isClearing || isLoading} 
+              className="btn btn-ghost btn-sm"
+              style={{ color: "var(--danger)", opacity: 0.8 }}
+            >
+              {isClearing ? "Clearing..." : "Clear Chat"}
+            </button>
+          )}
+          <Link href={`/chart/${chartId}`} className="btn btn-primary btn-sm">
+            View Chart
+          </Link>
+        </div>
       </div>
 
       {/* Messages */}
@@ -185,16 +213,18 @@ export default function ChatClient({
                   fontSize: "0.9375rem",
                   lineHeight: 1.7,
                 }}>
-                  <ReactMarkdown
-                    components={{
-                      p: ({ node, ...props }) => <p style={{ margin: "0 0 1rem 0", whiteSpace: "pre-wrap" }} {...props} />,
-                      strong: ({ node, ...props }) => <strong style={{ color: "var(--text-primary)", fontWeight: 600 }} {...props} />,
-                      ul: ({ node, ...props }) => <ul style={{ margin: "0 0 1rem 1.5rem" }} {...props} />,
-                      li: ({ node, ...props }) => <li style={{ marginBottom: "0.5rem" }} {...props} />,
-                    }}
-                  >
-                    {m.content}
-                  </ReactMarkdown>
+                  <div className="react-markdown-wrapper">
+                    <ReactMarkdown
+                      components={{
+                        p: ({ node, ...props }) => <p style={{ margin: "0 0 1rem 0", whiteSpace: "pre-wrap" }} {...props} />,
+                        strong: ({ node, ...props }) => <strong style={{ color: "var(--text-primary)", fontWeight: 600 }} {...props} />,
+                        ul: ({ node, ...props }) => <ul style={{ margin: "0 0 1rem 1.5rem" }} {...props} />,
+                        li: ({ node, ...props }) => <li style={{ marginBottom: "0.5rem" }} {...props} />,
+                      }}
+                    >
+                      {m.content}
+                    </ReactMarkdown>
+                  </div>
               </div>
             </div>
           ))}

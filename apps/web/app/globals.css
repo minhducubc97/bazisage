@@ -551,6 +551,11 @@ a:hover { color: var(--text-primary); }
   }
 }
 
+/* ── Chat Markdown Support ── */
+.react-markdown-wrapper > *:last-child {
+  margin-bottom: 0 !important;
+}
+
 @media (max-width: 768px) {
   h1 { font-size: 2.2rem; }
   .section { padding: 3rem 0; }

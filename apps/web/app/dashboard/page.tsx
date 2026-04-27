@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
+import DeleteChartButton from "./DeleteChartButton";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -86,13 +87,12 @@ export default async function DashboardPage() {
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
                 {charts.map((chart) => (
-                  <Link
-                    key={chart.id as string}
-                    href={`/chart/${chart.id as string}`}
-                    style={{ textDecoration: "none" }}
-                  >
-                    <div className="card card-gold chart-card-link">
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                  <div key={chart.id as string} className="card card-gold chart-card-link" style={{ position: "relative", padding: 0 }}>
+                    <Link
+                      href={`/chart/${chart.id as string}`}
+                      style={{ textDecoration: "none", display: "block", padding: "1.25rem 1.5rem" }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingRight: "3.5rem" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
                           <div style={{
                             width: 56, height: 56,
@@ -125,8 +125,13 @@ export default async function DashboardPage() {
                           <span style={{ color: "var(--text-muted)", fontSize: "1.25rem" }}>→</span>
                         </div>
                       </div>
+                    </Link>
+                    
+                    {/* Delete button positioned absolutely inside the card on the far right edge */}
+                    <div style={{ position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", zIndex: 10 }}>
+                      <DeleteChartButton chartId={chart.id as string} />
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
             )}

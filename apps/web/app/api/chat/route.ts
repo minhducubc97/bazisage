@@ -159,3 +159,41 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get('sessionId');
+
+    if (!sessionId) {
+      return NextResponse.json({ error: "Missing sessionId" }, { status: 400 });
+    }
+
+    // Verify ownership
+    const { data: session } = await supabase
+      .from('chat_sessions')
+      .select('user_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (session?.user_id !== user.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
+    }
+
+    const { error } = await supabase
+      .from('chat_messages')
+      .delete()
+      .eq('session_id', sessionId);
+
+    if (error) throw error;
+
+    return NextResponse.json({ success: true });
+  } catch (err: any) {
+    console.error("[/api/chat DELETE] Error:", err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
