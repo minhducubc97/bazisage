@@ -68,10 +68,41 @@ export default function OnboardingClient() {
 
   const submitChart = async () => {
     setIsLoading(true);
-    // TODO: call /api/chart/compute then redirect to /chart/[id]
-    // For now, simulate and redirect to a demo chart page
-    await new Promise(r => setTimeout(r, 2500));
-    router.push("/chart/demo");
+    try {
+      // Compute the chart via the API (persists to Supabase if user is signed in)
+      const utcOffsetMinutes = -new Date().getTimezoneOffset();
+      const res = await fetch("/api/chart/compute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          birthDate: data.birthDate,
+          birthTime: data.birthTimeKnown ? data.birthTime : null,
+          birthLocationName: data.locationName,
+          longitude: data.longitude,
+          latitude: data.latitude,
+          gender: data.gender,
+          timezone: data.timezone,
+          utcOffsetMinutes,
+          subjectName: data.name,
+        }),
+      });
+
+      if (!res.ok) throw new Error("chart compute failed");
+
+      const json = await res.json() as { chartId?: string; persisted?: boolean };
+
+      // If chart was saved (user is logged in), go to chat with that chart
+      if (json.persisted && json.chartId) {
+        router.push(`/chat?chartId=${json.chartId}`);
+      } else {
+        // Not logged in — the chart was computed but not saved
+        // Redirect to login so they can save it, then to chat
+        router.push("/auth/login?redirectTo=/chat");
+      }
+    } catch {
+      // Fallback: show demo chart so the user isn't stuck
+      router.push("/chart/demo");
+    }
   };
 
   const updateData = (patch: Partial<OnboardingData>) =>
