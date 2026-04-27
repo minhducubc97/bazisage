@@ -6,9 +6,15 @@ const nextConfig = {
     "@bazisage/ai-client",
     "@bazisage/ui",
   ],
-  experimental: {
-    // Enable React 19 features
-    ppr: false,
+  // Tell webpack to resolve .js imports as .ts when inside transpiled packages.
+  // This is needed because the bazi-core source uses ESM .js extensions
+  // (required for Node ESM compatibility) but Next.js bundles the raw TS source.
+  webpack(config) {
+    config.resolve.extensionAlias = {
+      ".js": [".ts", ".tsx", ".js"],
+      ".jsx": [".tsx", ".jsx"],
+    };
+    return config;
   },
 };
 
