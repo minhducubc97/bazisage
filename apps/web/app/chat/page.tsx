@@ -41,16 +41,19 @@ export default async function ChatPage({
 
   if (!chart) redirect("/dashboard");
 
-  // Get or create a chat session
+  // Get or create a chat session (enforcing a 24-hour clean slate rule)
   let sessionId: string;
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
   const { data: existing } = await supabase
     .from("chat_sessions")
     .select("id")
     .eq("user_id", user.id)
     .eq("chart_id", resolvedChartId)
+    .gte("last_message_at", twentyFourHoursAgo)
     .order("last_message_at", { ascending: false })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (existing) {
     sessionId = existing.id as string;
