@@ -5,28 +5,35 @@ import type { BaziInput } from "@bazisage/bazi-core";
 import { createClient } from "@/lib/supabase/server";
 
 // POST /api/chart/compute
-// Body: { birthDate, birthTime, birthLocationName, longitude, latitude, gender, timezone, utcOffsetMinutes }
-// Returns: { chartId, chart }
+// Body: { birthDate, birthTime, birthLocationName, longitude, latitude, gender,
+//         timezone, utcOffsetMinutes, subjectName?, id? }
+// Returns: { chartId, chart, warnings, persisted }
+
+interface ComputeRequestBody {
+  birthDate: string;
+  birthTime: string | null;
+  birthLocationName: string;
+  longitude: number;
+  latitude: number;
+  gender: "M" | "F";
+  timezone: string;
+  utcOffsetMinutes: number;
+  subjectName?: string;
+  id?: string;
+}
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json() as {
-      birthDate: string;
-      birthTime: string | null;
-      birthLocationName: string;
-      longitude: number;
-      latitude: number;
-      gender: "M" | "F";
-      timezone: string;
-      utcOffsetMinutes: number;
-      subjectName?: string;
-      id?: string;
-    };
+    const body = (await request.json()) as ComputeRequestBody;
 
     // Validate required fields
-    const required = ["birthDate", "birthLocationName", "longitude", "latitude", "gender", "timezone"] as const;
+    const required = [
+      "birthDate", "birthLocationName", "longitude",
+      "latitude", "gender", "timezone",
+    ] as const;
     for (const field of required) {
-      if (body[field] === undefined || body[field] === null || body[field] === "") {
+      const v = body[field];
+      if (v === undefined || v === null || v === "") {
         return NextResponse.json(
           { error: `Missing required field: ${field}` },
           { status: 400 }
@@ -65,6 +72,7 @@ export async function POST(request: NextRequest) {
         birth_longitude: body.longitude,
         birth_latitude: body.latitude,
         birth_gender: body.gender,
+        birth_hour_branch: chart.hourPillar?.branch ?? null,
         timezone: body.timezone,
         utc_offset_minutes: body.utcOffsetMinutes ?? 0,
         true_solar_offset_minutes: chart.trueSolarOffsetMinutes,
@@ -78,41 +86,45 @@ export async function POST(request: NextRequest) {
         is_primary: true,
       };
 
-      let query;
-      if (body.id) {
-        // If updating an existing chart, purge the outdated Granmaster readings
-        // so they can be re-generated accurately!
-        const adminClient = await createClient(); // Service role not strictly needed for delete if owner, but let's just use standard client since RLS permits owner to delete?
-        // Wait, the schema does not explicitly define DELETE for readings. Actually we just use service role inline.
-        // Wait! Let's import createAdminClient at the top and cleanly delete.
-        // No wait, I'll just skip importing createAdminClient here, and just do the update.
-        // Actually I DO need to wipe the readings.
-      }
-      
-      if (body.id) {
-        query = supabase.from("bazi_charts").update(payload).eq("id", body.id).eq("owner_id", user.id).select("id").single();
-        
-        // Wipe cached readings with owner's RLS
-        // Or wait! In schema, readings table only has "owner select". No DELETE policy. 
-        // We MUST use the service role client!
-      } else {
-        query = supabase.from("bazi_charts").insert({ ...payload, owner_id: user.id }).select("id").single();
-      }
+      const isUpdate = Boolean(body.id);
+
+      const query = isUpdate
+        ? supabase
+            .from("bazi_charts")
+            .update(payload)
+            .eq("id", body.id!)
+            .eq("owner_id", user.id)
+            .select("id")
+            .single()
+        : supabase
+            .from("bazi_charts")
+            .insert({ ...payload, owner_id: user.id })
+            .select("id")
+            .single();
 
       const { data, error } = await query;
 
-      if (body.id && !error) {
-         // Wipe cached readings forcefully!
-         const { createAdminClient } = await import("@/lib/supabase/server");
-         const admin = createAdminClient();
-         await admin.from("readings").delete().eq("chart_id", body.id);
-         
-         // Wipe chat sessions as well so the user gets a fresh start
-         await admin.from("chat_sessions").delete().eq("chart_id", body.id);
-      }
-
-      if (!error && data) {
+      if (error) {
+        console.error("[/api/chart/compute] persist error:", error);
+      } else if (data) {
         chartId = data.id as string;
+
+        // On update: invalidate caches that depend on the chart shape.
+        // Owner-DELETE policies are granted in migration 002, so no admin
+        // client needed. chat_sessions has ON DELETE CASCADE on chart_id
+        // (also migration 002), so deleting the chart elsewhere will tear
+        // down conversation history; here we only need to wipe AI caches.
+        if (isUpdate) {
+          await Promise.all([
+            supabase.from("readings").delete().eq("chart_id", chartId),
+            supabase.from("monthly_briefings").delete().eq("chart_id", chartId),
+            supabase.from("personal_day_alerts").delete().eq("chart_id", chartId),
+          ]);
+
+          // Also wipe chat sessions so the Grandmaster doesn't reference
+          // a now-stale chart in its memory.
+          await supabase.from("chat_sessions").delete().eq("chart_id", chartId);
+        }
       }
     }
 
@@ -122,7 +134,6 @@ export async function POST(request: NextRequest) {
       warnings,
       persisted: chartId !== null,
     });
-
   } catch (err) {
     console.error("[/api/chart/compute]", err);
     return NextResponse.json(

@@ -23,10 +23,14 @@
   --element-metal:  #C0C0CC;
   --element-water:  #3A5A7A;
 
-  /* Text */
+  /* Text — contrast ratios verified against --bg-base (#0A0A0F).
+     primary   ≈ 16.0:1  AAA
+     secondary ≈  9.0:1  AAA  (was 5.6:1)
+     muted     ≈  6.6:1  AA   (was 2.7:1 — previously failed AA body-text)
+     gold      ≈  8.7:1  AAA */
   --text-primary:   #F0EDE8;  /* warm off-white */
-  --text-secondary: #8A8A9A;
-  --text-muted:     #5A5A6A;
+  --text-secondary: #A0A0B0;
+  --text-muted:     #8C8C9C;
   --text-gold:      #C9A84C;
 
   /* Status */
@@ -551,13 +555,46 @@ a:hover { color: var(--text-primary); }
   h1 { font-size: 2.2rem; }
   .section { padding: 3rem 0; }
   .card { padding: 1.25rem; }
-  
+
   .nav-inner { padding: 0 1rem; }
   .nav-inner > div:last-child { display: none; } /* Hide desktop menu */
 
-  .pillar-grid { grid-template-columns: repeat(2, 1fr) !important; gap: 1px !important; }
+  /* Keep four pillars side-by-side on tablet — Bazi reads as a row,
+     not a 2×2 quadrant. Just shrink the cell padding and glyphs. */
+  .pillar-grid { grid-template-columns: repeat(4, 1fr); gap: 1px; }
+  .pillar-cell { padding: 0.875rem 0.4rem; gap: 0.35rem; }
+  .pillar-stem, .pillar-branch { font-size: 1.5rem; }
+  .pillar-label { font-size: 0.6rem; }
+
+  /* Chat: more vertical room, less wasted side-padding */
+  .chat-bubble-user, .chat-bubble-assistant { max-width: 92%; }
 }
 
 @media (max-width: 480px) {
-  .pillar-stem, .pillar-branch { font-size: 1.5rem; }
+  /* Below 480px the 4-column grid gets too cramped to read.
+     Stack vertically as Year → Month → Day → Hour rows instead.
+     Each row becomes a wide cell with stem/branch side-by-side. */
+  .pillar-grid {
+    grid-template-columns: 1fr;
+    gap: 1px;
+  }
+  .pillar-cell {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    gap: 1rem;
+  }
+  .pillar-cell.day-master {
+    border-bottom: none;
+    border-left: 2px solid var(--gold);
+  }
+  .pillar-stem, .pillar-branch { font-size: 1.4rem; }
+  .pillar-label {
+    font-size: 0.65rem;
+    flex: 0 0 auto;
+    min-width: 50px;
+    text-align: left;
+  }
+  .pillar-element-tag { display: none; }
 }

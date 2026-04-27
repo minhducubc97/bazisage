@@ -25,6 +25,27 @@ const STARTER_QUESTIONS = [
   "What relationships does my chart naturally attract or struggle with?",
 ];
 
+/**
+ * Map a server error code (or raw error message) to copy safe to show users.
+ * Never leak provider names, env-file references, or stack traces here.
+ */
+function friendlyChatError(message: string | undefined): string {
+  const msg = message ?? "";
+  if (msg.includes("AI_SERVICE_UNAVAILABLE")) {
+    return "The Grandmaster is temporarily unavailable. Please try again in a few minutes.";
+  }
+  if (msg.includes("AI_RATE_LIMITED")) {
+    return "Too many questions in a short window. Take a breath, then try again.";
+  }
+  if (msg.includes("AI_AUTH_ERROR") || msg.includes("401") || msg.includes("Unauthorized")) {
+    return "Your session has expired. Please refresh the page.";
+  }
+  if (msg.includes("AI_TEMPORARY_ERROR")) {
+    return "The Grandmaster lost their train of thought. Please try again.";
+  }
+  return "Connection error — please try again.";
+}
+
 export default function ChatClient({
   chartId,
   sessionId,
@@ -208,11 +229,7 @@ export default function ChatClient({
               fontSize: "0.875rem",
               marginBottom: "1rem",
             }}>
-              {error.message?.includes("402_INSUFFICIENT_BALANCE") || error.message?.includes("Insufficient Balance") || error.message?.includes("402")
-                ? "⚠️ AI service credits exhausted. Please top up your DeepSeek account or switch your AI_PROVIDER in .env.local to 'claude'."
-                : error.message?.includes("401") || error.message?.includes("Unauthorized")
-                ? "⚠️ Session expired. Please refresh the page."
-                : `Connection error — ${error.message ?? "please try again."}`}
+              {friendlyChatError(error.message)}
             </div>
           )}
 

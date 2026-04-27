@@ -64,20 +64,30 @@ export async function POST(request: NextRequest) {
       ?? (chartRow.subject_name as string)
       ?? "friend";
 
+    // Pass YYYY-MM-DD (not full ISO with hours) so the system prompt stays
+    // identical for an entire calendar day. This maximises DeepSeek's
+    // automatic context-cache hit rate — every request from the same user
+    // within the same day reuses the cached prefix server-side.
+    const today = new Date().toISOString().split("T")[0];
     const systemPrompt = buildGrandmasterSystemPrompt(
       chart,
       userName,
       chartRow.birth_date as string,
       memories ?? [],
-      new Date().toISOString().split("T")[0]
+      today
     );
+
+    // Cap history at the last N turns. The chat page loader already trims
+    // to 40 — defense in depth in case the endpoint is called directly.
+    const HISTORY_CAP = 40;
+    const trimmedMessages = body.messages.slice(-HISTORY_CAP);
 
     // Stream the response
     const result = streamText({
       model: getModel("main"),
       system: systemPrompt,
-      messages: body.messages,
-      maxTokens: 1024,
+      messages: trimmedMessages,
+      maxTokens: 4096,
       temperature: 0.7,
       onError: ({ error }) => {
         console.error("[/api/chat] streamText error:", error);
@@ -117,17 +127,34 @@ export async function POST(request: NextRequest) {
 
     return result.toDataStreamResponse({
       getErrorMessage: (err: any) => {
-        if (err?.message?.includes("Insufficient Balance") || String(err).includes("Insufficient Balance")) {
-          return "402_INSUFFICIENT_BALANCE";
+        // Map provider errors to stable, neutral codes the client can branch on.
+        // Never leak provider names, account states, or internal infrastructure
+        // details to end users.
+        const raw = err?.message ?? String(err);
+
+        if (raw.includes("Insufficient Balance") || raw.includes("insufficient_quota")) {
+          return "AI_SERVICE_UNAVAILABLE";
         }
-        return err?.message || String(err);
+        if (err?.statusCode === 401 || err?.status === 401 || raw.includes("401")) {
+          return "AI_AUTH_ERROR";
+        }
+        if (err?.statusCode === 429 || err?.status === 429 || raw.includes("rate_limit")) {
+          return "AI_RATE_LIMITED";
+        }
+
+        // Log internally for debugging; surface a generic message to user.
+        console.error("[/api/chat] unmapped provider error:", raw);
+        return "AI_TEMPORARY_ERROR";
       }
     });
 
   } catch (err: any) {
     console.error("[/api/chat] Unhandled error:", err);
     if (err?.message?.includes("Insufficient Balance")) {
-      return NextResponse.json({ error: "402_INSUFFICIENT_BALANCE" }, { status: 402 });
+      return NextResponse.json(
+        { error: "AI_SERVICE_UNAVAILABLE" },
+        { status: 503 }
+      );
     }
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

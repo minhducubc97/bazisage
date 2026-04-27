@@ -28,16 +28,31 @@ export async function updateSession(request: NextRequest) {
   // Refresh session if expired — required for Server Components
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Protect dashboard and app routes
+  // Protect authenticated app routes. Per-page auth checks still exist as
+  // defense-in-depth, but middleware redirects keep unauthed users from
+  // seeing brief loading skeletons of pages they shouldn't access.
+  //
+  // NOTE: `/chart/demo` is intentionally PUBLIC (marketing demo). Only
+  // chart pages with a UUID id segment require auth — handled below.
   const url = request.nextUrl;
-  const isProtected =
-    url.pathname.startsWith("/dashboard") ||
-    url.pathname.startsWith("/chat");
+  const path = url.pathname;
+
+  const isAlwaysProtected =
+    path.startsWith("/dashboard") ||
+    path.startsWith("/chat") ||
+    path.startsWith("/onboarding");
+
+  // /chart/<uuid> is protected; /chart/demo is not.
+  const isProtectedChart =
+    path.startsWith("/chart/") &&
+    !path.startsWith("/chart/demo");
+
+  const isProtected = isAlwaysProtected || isProtectedChart;
 
   if (isProtected && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/auth/login";
-    redirectUrl.searchParams.set("redirectTo", url.pathname);
+    redirectUrl.searchParams.set("redirectTo", path);
     return NextResponse.redirect(redirectUrl);
   }
 

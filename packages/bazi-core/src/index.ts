@@ -46,12 +46,26 @@ export function computeChart(
   const warnings: string[] = [];
 
   // ── 1. Build UTC birth datetime ─────────────────────────────────────────────
+  // We mark `timezone` as intentionally unused at this layer — the caller is
+  // expected to have already resolved it into utcOffsetMinutes via
+  // `utcOffsetFromTimezone(birthIso, timezone)`. Keeping the parameter in the
+  // signature so future improvements (e.g. DST-aware re-validation) don't
+  // break callers.
+  void timezone;
+
   const birthLocalIso = input.birthTime
     ? `${input.birthDate}T${input.birthTime}:00`
     : `${input.birthDate}T12:00:00`; // Noon default for Three Pillars
 
-  // Convert local time to UTC using the timezone offset
+  // Trick: parse the local wall-clock string AS IF it were UTC, then subtract
+  // the offset to recover the real UTC instant. Equivalent to the standard
+  // "naive local → UTC" conversion without pulling in a tz library.
+  // e.g. "1990-05-15T11:30:00" + UTC+7 (420)  → real UTC = 04:30
+  //      "1990-05-15T11:30:00" + UTC-5 (-300) → real UTC = 16:30
   const localMs = new Date(birthLocalIso + "Z").getTime() - utcOffsetMinutes * 60_000;
+  if (Number.isNaN(localMs)) {
+    throw new Error(`Invalid birth datetime: ${birthLocalIso}`);
+  }
 
   // ── 2. Apply True Solar Time correction ────────────────────────────────────
   const { trueSolarDateMs, offsetMinutes } = applyTrueSolarTime(
@@ -122,17 +136,25 @@ export function computeChart(
   // ── 9. Annual pillars (past 5, next 15 years) ─────────────────────────────
   const currentYear = new Date().getFullYear();
   const annualPillarData = computeAnnualPillars(currentYear - 5, currentYear + 15);
-  const annualPillars = annualPillarData.map(({ year, stem, branch }) => ({
-    year,
-    pillar: {
-      stem,
-      branch,
-      hiddenStems: [] as HeavenlyStem[],
-      stemElement: STEM_INFO[stem].element,
-      branchElement: BRANCH_INFO[branch]?.element ?? "Wood",
-    } as Pillar,
-    interactions: [],
-  }));
+  const annualPillars = annualPillarData.map(({ year, stem, branch }) => {
+    const branchInfo = BRANCH_INFO[branch];
+    if (!branchInfo) {
+      // Should never happen — every Earthly Branch is in BRANCH_INFO.
+      // Failing loud beats silently mislabeling the user's chart as "Wood".
+      throw new Error(`Unknown Earthly Branch '${branch}' for year ${year}`);
+    }
+    return {
+      year,
+      pillar: {
+        stem,
+        branch,
+        hiddenStems: [] as HeavenlyStem[],
+        stemElement: STEM_INFO[stem].element,
+        branchElement: branchInfo.element,
+      } as Pillar,
+      interactions: [],
+    };
+  });
 
   // ── 10. Assemble chart ─────────────────────────────────────────────────────
   const chart: BaziChart = {

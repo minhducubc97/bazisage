@@ -50,13 +50,18 @@ function computeLuckPillarStartAge(
 ): number {
   try {
     const birthSolarDay = SolarDay.fromYmd(birthYear, birthMonth, birthDay);
-    const terms = (birthSolarDay as any).getSolarMonth?.()?.getSolarYear?.()?.getSolarTerms?.() ?? [];
+    const terms = getSolarTermsForYear(birthSolarDay);
+    if (terms.length === 0) {
+      // tyme4ts API surface drifted — surface the warning, fall back gracefully.
+      console.warn("[bazi-core] luck-pillars: no solar terms returned by tyme4ts; using fallback start age");
+      return 1;
+    }
 
-    // Find the next or previous Jié (節) term
-    // Jié terms are at even indices (0, 2, 4, ...) in the 24 solar terms array
-    // We need to find the term that comes AFTER (forward) or BEFORE (backward) birth
+    // Find the next or previous Jié (節) term.
+    // Jié terms are at even indices (0, 2, 4, ...) in the 24 solar terms array.
+    // We need the term that comes AFTER (forward) or BEFORE (backward) birth.
 
-    // Build a flat list of terms across this year and adjacent years for safety
+    // Build a flat list of terms across this year and adjacent years for safety.
     const allTerms: Array<{ year: number; month: number; day: number }> = [];
     for (const term of terms) {
       const td = term.getJulianDay().getSolarDay();
@@ -98,12 +103,34 @@ function computeLuckPillarStartAge(
         return daysDiff / 3;
       }
     }
-  } catch {
-    // Ignore tyme4ts errors
+  } catch (err) {
+    // Don't silently swallow — log so a tyme4ts API change is observable in prod
+    // but still degrade gracefully so chart computation doesn't fail entirely.
+    console.warn("[bazi-core] luck-pillars: failed to compute start age via tyme4ts:", err);
   }
 
   // Fallback: approximate 1 year start age
   return 1;
+}
+
+/**
+ * Thin wrapper around the tyme4ts `SolarDay → SolarMonth → SolarYear → SolarTerms`
+ * navigation. Quarantines the chained `as any` access into one place so we
+ * notice immediately if tyme4ts ships a breaking change.
+ *
+ * Returns `[]` if the tyme4ts API surface no longer matches expectations
+ * (caller is expected to check + fall back).
+ */
+type SolarTermLike = { getJulianDay: () => { getSolarDay: () => {
+  getMonth: () => { getYear: () => { getYear: () => number }, getMonth: () => number },
+  getDay: () => number,
+}}};
+function getSolarTermsForYear(birthSolarDay: SolarDay): SolarTermLike[] {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const navi = birthSolarDay as any;
+  const terms = navi?.getSolarMonth?.()?.getSolarYear?.()?.getSolarTerms?.();
+  if (!Array.isArray(terms)) return [];
+  return terms as SolarTermLike[];
 }
 
 /**

@@ -16,6 +16,12 @@
 import type { Element, DayMasterStrength, ElementBalance } from "./types.js";
 import { PRODUCES, CONTROLLED_BY } from "./tables.js";
 
+/** Inverse of PRODUCES: returns the element that produces `target`. */
+function producerOf(target: Element): Element | undefined {
+  return (Object.entries(PRODUCES) as [Element, Element][])
+    .find(([, t]) => t === target)?.[0];
+}
+
 /**
  * Determine the Useful God element and an adverse element.
  *
@@ -32,13 +38,8 @@ export function determineUsefulGod(
     // Weak DM needs support:
     // 1. Resource element (produces DM) — most helpful
     // 2. Companion element (same as DM) — parallel support
-    // Adverse: element that the DM controls (wealth takes energy from weak DM)
-    const usefulGod = PRODUCES[CONTROLLED_BY[dmElement] ?? "Water"] as Element;
-    // Actually: resource = what produces DM = PRODUCED_BY[dmElement]
-    // Let's compute correctly:
-    const resourceElement = Object.entries(PRODUCES).find(
-      ([, target]) => target === dmElement
-    )?.[0] as Element | undefined;
+    // Adverse: element that the DM controls (wealth drains a weak DM further)
+    const resourceElement = producerOf(dmElement);
 
     return {
       usefulGod: resourceElement ?? dmElement,
@@ -51,14 +52,9 @@ export function determineUsefulGod(
     // 1. Output element (DM produces this) — drains excess energy productively
     // 2. Wealth element (DM controls) — gives DM a focus
     // Adverse: Resource element (further strengthens already-strong DM)
-    const outputElement = PRODUCES[dmElement];
-    const resourceElement = Object.entries(PRODUCES).find(
-      ([, target]) => target === dmElement
-    )?.[0] as Element | undefined;
-
     return {
-      usefulGod: outputElement,
-      adverseElement: resourceElement ?? null,
+      usefulGod: PRODUCES[dmElement],
+      adverseElement: producerOf(dmElement) ?? null,
     };
   }
 
