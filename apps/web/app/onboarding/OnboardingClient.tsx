@@ -91,13 +91,12 @@ export default function OnboardingClient() {
 
       const json = await res.json() as { chartId?: string; persisted?: boolean };
 
-      // If chart was saved (user is logged in), go to chat with that chart
+      // If chart was saved (user is logged in), show their chart
       if (json.persisted && json.chartId) {
-        router.push(`/chat?chartId=${json.chartId}`);
+        router.push(`/chart/${json.chartId}`);
       } else {
-        // Not logged in — the chart was computed but not saved
-        // Redirect to login so they can save it, then to chat
-        router.push("/auth/login?redirectTo=/chat");
+        // Not logged in → go to login, then chat
+        router.push("/auth/login?redirectTo=/dashboard");
       }
     } catch {
       // Fallback: show demo chart so the user isn't stuck
