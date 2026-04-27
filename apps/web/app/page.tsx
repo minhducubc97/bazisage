@@ -47,7 +47,7 @@ const TESTIMONIALS = [
   },
   {
     quote: "Every Bazi tool I've used before was basically a static wheel. This feels like having a grandmaster on call — one who actually remembers our last conversation.",
-    name: "Linh T.", role: "Product Lead",
+    name: "Mai D.", role: "Product Lead",
   },
 ];
 
