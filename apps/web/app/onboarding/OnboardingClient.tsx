@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -518,12 +518,12 @@ const COMPUTING_STEPS = [
 function ComputingSteps() {
   const [current, setCurrent] = useState(0);
 
-  useState(() => {
+  useEffect(() => {
     const interval = setInterval(() => {
       setCurrent(c => Math.min(c + 1, COMPUTING_STEPS.length - 1));
     }, 500);
     return () => clearInterval(interval);
-  });
+  }, []);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "1rem", textAlign: "left" }}>
